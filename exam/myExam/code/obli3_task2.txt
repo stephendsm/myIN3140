@@ -1,0 +1,110 @@
+%Defining symbolic variables
+syms m1 m2 m3
+syms I_1x I_1y I_1z
+syms I_2x I_2y I_2z
+syms I_3x I_3y I_3z
+syms L1 L2 L3
+syms c1 c2 c3
+syms s1 s2 s3 g
+syms t1 t2 t3
+%syms x1 x2 x3
+syms C tau
+n = 3;
+​
+%Define generalized coordiante vectors
+x = sym('x',[n,1]) 
+q = sym('dx',[n,1])
+t = sym('d2x',[n,1])
+​
+x(1) = 0;
+x(3) = 0;
+​
+q(1) = 0;
+q(3) = 0;
+​
+t(1) = 0;
+t(3) = 0;
+​
+s1 = sin(x(1));
+s2 = sin(x(2));
+s3 = sin(x(3));
+c1 = cos(x(1));
+c2 = cos(x(2));
+c3 = cos(x(3));
+​
+%Potential energy
+P1 = m1*g*L1*s1;
+P2 = m2*g*(L1*s1+L2*(s1+s2));
+P3 = m3*g*(L1+L2*s2-L3/2*s3);
+P = P1+P2+P3;
+​
+%Inertia tensors
+I1 = [I_1x,0,0;0,I_1y,0;0,0,I_1z];
+I2 = [I_2x,0,0;0,I_2y,0;0,0,I_2z];
+I3 = [I_3x,0,0;0,I_3y,0;0,0,I_3z];
+​
+​
+%Rotational matrixes
+R1 = [1,0,0;0,1,0;0,0,1];
+R2 = R1 * [c2,-s2,0;s2,c2,0;0,0,1];
+R3 = R2 * [c3,-s3,0;s3,c3,0;0,0,1];
+​
+%Part of the rotational kinematic equation
+In1 = R1*I1*transpose(R1);
+In2 = R2*I2*transpose(R2);
+In3 = R3*I3*transpose(R3);
+​
+%Linear Jacobian matrices
+Jv1 = [0,0,0;0,0,0;0,0,0];
+Jv2 = [-s1*L2*c2,-c1*L2*s2,0;c1*L2*c2,-s1*L2*s2,0;0,L2*c2,0];
+Jv3 = [-s1*(L2*c2+L3*c2*c3),-c1*(L2*s2+L3*s2*s3), -c1*(L3*s2*s3); c1*(L2*c2+L3*c2*c3), -s1*(L2*s2+L3*s2*s3), -s1*(L3*s2*s3); 0, (L2*c2+L3*c2*c3), L3*c2*c3];
+​
+​
+%Rotational Jacobian matrices
+Jw1 = [0,0,0;0,0,0;1,0,0];
+Jw2 = [0,s1,0;0,-c1,0;1,0,0];
+Jw3 = [0,s1,s1;0,-c1,-c1;1,0,0];
+​
+%Total linear kinetic energy
+Kv1 = m1*transpose(Jv1)*Jv1;
+Kv2 = m2*transpose(Jv2)*Jv2;
+Kv3 = m3*transpose(Jv3)*Jv3;
+Kv =1/2*transpose(q)* (Kv1+Kv2+Kv3)*q;
+​
+%Total rotational kinetic energy
+Kw1 = transpose(Jw1)*In1*Jw1;
+Kw2 = transpose(Jw2)*In2*Jw2;
+Kw3 = transpose(Jw3)*In3*Jw3;
+Kw = 1/2*transpose(q)* (Kw1+Kw2+Kw3)*q;
+​
+%Finding D(q)
+D = (Kv1+Kv2+Kv3+Kw1+Kw2+Kw3)
+​
+K = Kv+Kw;
+​
+%Sets up the Christoffel symbols
+for i = 1:n
+    for j = 1:n
+        for k = 1:n
+            C(i,j,k) = 0.5*...
+                (diff(D(k,j),x(i))+ ...
+                 diff(D(k,i),x(j))- ...
+                 diff (D(i,j),x(k)));
+        end
+    end
+end
+  
+%Finding C(q)
+C = C(:,:,i);
+            
+%Finding g(q)
+for y = 1:n
+    F(y) = diff(P,x(y));
+end
+​
+%Finding the dynamical model
+tau = D*t+C*q+F;
+​
+tau1 = tau(1);
+tau2 = tau(2)
+tau3 = tau(3);
